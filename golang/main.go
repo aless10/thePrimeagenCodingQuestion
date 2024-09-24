@@ -1,14 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
 )
 
 type TaskQueue struct {
-	channel chan int
-	queue   chan int
+	channel  chan int
+	queue    chan int
+	capacity int
+	tasks    int
 }
 
 func (tq *TaskQueue) enqueue(n int) {
@@ -21,7 +24,7 @@ func (tq *TaskQueue) enqueue(n int) {
 }
 
 func (tq *TaskQueue) tryToRunTask() {
-	if len(tq.channel) == 3 {
+	if len(tq.channel) == tq.capacity {
 		return
 	}
 	n := tq.dequeue()
@@ -35,7 +38,7 @@ func (tq *TaskQueue) dequeue() int {
 
 func (tq *TaskQueue) run() {
 
-	for i := 1; i < 10; i++ {
+	for i := 1; i < tq.tasks+1; i++ {
 		tq.enqueue(i)
 	}
 
@@ -44,10 +47,12 @@ func (tq *TaskQueue) run() {
 	}
 
 }
-func newTaskQueue() *TaskQueue {
+func newTaskQueue(tasks, capacity int) *TaskQueue {
 	return &TaskQueue{
-		channel: make(chan int, 3),
-		queue:   make(chan int, 100),
+		channel:  make(chan int, capacity),
+		queue:    make(chan int, 100),
+		capacity: capacity,
+		tasks:    tasks,
 	}
 }
 
@@ -60,7 +65,11 @@ func promise_factory(n int, tq *TaskQueue) {
 }
 
 func main() {
-	q := newTaskQueue()
 
+	tasks := flag.Int("tasks", 10, "Number of tasks to run")
+	capacity := flag.Int("capacity", 3, "Task capacity")
+	flag.Parse() // parse the flags
+
+	q := newTaskQueue(*tasks, *capacity)
 	q.run()
 }
